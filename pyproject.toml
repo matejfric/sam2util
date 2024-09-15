@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sam2util"
-version = "1.0.1"
+version = "1.0.2"
 description = ""
 authors = ["Matej Fric"]
 readme = "README.md"
@@ -11,6 +11,7 @@ ffmpeg-python = "^0.2.0"
 numpy = "^1.26.0"
 tqdm = "^4.66.0"
 pillow = "^10.4.0"
+opencv-python = "^4.10.0"
 
 
 [build-system]

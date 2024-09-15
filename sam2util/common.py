@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 
-import ffmpeg
-
 
 def convert_jpg_to_mp4(
     image_folder: str, output_video_path: str, fps: int = 30
@@ -15,6 +13,8 @@ def convert_jpg_to_mp4(
     >>> output_folder = 'video_jpg'
     >>> convert_mp4_to_jpg(video_path, output_folder)
     """
+    import ffmpeg
+
     input_pattern = os.path.join(image_folder, "%05d.jpg")
     (
         ffmpeg.input(input_pattern, framerate=fps)
@@ -23,6 +23,13 @@ def convert_jpg_to_mp4(
         )
         .run(overwrite_output=True)
     )
+
+
+def _ffmpeg_assert_quality(quality: int) -> None:
+    """Assert that the quality is between 2 and 31 (inclusive)."""
+    assert (
+        2 <= quality <= 31
+    ), "Quality must be between 2 and 31 (inclusive), lower is better."
 
 
 def convert_mp4_to_jpg(video_path: str, output_folder: str, quality: int = 2) -> None:
@@ -34,13 +41,81 @@ def convert_mp4_to_jpg(video_path: str, output_folder: str, quality: int = 2) ->
     >>> output_folder = 'video_jpg'
     >>> convert_mp4_to_jpg(video_path, output_folder)
     """
+    import ffmpeg
+
     os.makedirs(output_folder, exist_ok=True)
     output_pattern = os.path.join(output_folder, "%05d.jpg")
-
-    assert (
-        2 <= quality <= 31
-    ), "Quality must be between 2 and 31 (inclusive), lower is better."
+    _ffmpeg_assert_quality(quality)
     ffmpeg.input(video_path).output(output_pattern, **{"q:v": quality}).run()
+
+
+def convert_mp4_to_jpg_every_nth_frame(
+    video_path: str, output_folder: str, n: int = 30, quality: int = 2
+) -> None:
+    """Convert an MP4 video to a folder of JPG images by selecting every `n`-th frame.
+
+    Example
+    -------
+    >>> video_path = 'video.mp4'
+    >>> output_folder = 'video_jpg'
+    >>> convert_mp4_to_jpg_every_nth_frame(video_path, output_folder)
+    """
+    import ffmpeg
+
+    os.makedirs(output_folder, exist_ok=True)
+    output_pattern = os.path.join(output_folder, "%05d.jpg")
+    _ffmpeg_assert_quality(quality)
+    ffmpeg.input(video_path).output(
+        output_pattern,
+        vf=f"select=not(mod(n\\,{n}))",  # Select every `n`-th frame
+        vsync="vfr",  # Variable frame rate
+        frame_pts=True,  # Preserve frame timestamps
+        **{"q:v": quality},  # q:v = 2 corresponds to the highest quality (ranges 2-31)
+    ).run()
+
+
+def merge_videos(video_paths: list[Path], output_path: str) -> None:
+    """Merge multiple videos into a single video.
+
+    Example
+    -------
+    >>> video_paths = list(Path('images').rglob('*.mp4'))
+    >>> output_path = 'merged_video.mp4'
+    >>> merge_videos(video_paths, output_path)
+    """
+    import cv2
+    from tqdm import tqdm
+
+    # Initialize variables for video properties
+    frame_width = None
+    frame_height = None
+    fps = None
+
+    # Create a VideoCapture object for each video
+    video_captures = [cv2.VideoCapture(video) for video in video_paths]
+
+    # Get video properties from the first video
+    if video_captures:
+        frame_width = int(video_captures[0].get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(video_captures[0].get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(video_captures[0].get(cv2.CAP_PROP_FPS))
+
+    # Define the codec and create a VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+
+    for capture in tqdm(video_captures, desc="Merging videos"):
+        while capture.isOpened():
+            ret, frame = capture.read()
+            if ret:
+                # Write the frame into the final video
+                out.write(frame)
+            else:
+                break
+        capture.release()  # Release the capture object for each video
+
+    out.release()  # Release the VideoWriter object
+    cv2.destroyAllWindows()
 
 
 def rename_files_in_folder(
