@@ -9,6 +9,8 @@ fi
 # Set the version using poetry
 poetry version "$1"
 
+git add pyproject.toml
+
 # Use the provided commit message or default to "v<version>"
 commit_message=${2:-"v$(poetry version -s)"}
 
