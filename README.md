@@ -9,3 +9,17 @@ Utility functions for the SAM-2 model, enabling video-to-image and image-to-vide
 ```
 pip install sam2util
 ```
+
+### Verify FFmpeg Installation
+
+To ensure FFmpeg is installed on your system, run the following command to check the version:
+
+```bash
+ffmpeg --version
+```
+
+If FFmpeg is not installed, you can install it with `apt` using the following command:
+
+```bash
+sudo apt install ffmpeg
+```
