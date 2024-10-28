@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sam2util"
-version = "1.0.3"
+version = "1.0.4"
 description = ""
 authors = ["Matej Fric"]
 readme = "README.md"
