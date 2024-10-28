@@ -3,7 +3,11 @@ from pathlib import Path
 
 
 def convert_jpg_to_mp4(
-    image_folder: str, output_video_path: str, fps: int = 30
+    image_folder: str | Path,
+    output_video_path: str | Path,
+    fps: int = 30,
+    image_format: str = "jpg",
+    file_names_pattern: str = "%05d",
 ) -> None:
     """Convert a folder of images to an MP4 video.
 
@@ -15,7 +19,7 @@ def convert_jpg_to_mp4(
     """
     import ffmpeg
 
-    input_pattern = os.path.join(image_folder, "%05d.jpg")
+    input_pattern = os.path.join(image_folder, f"{file_names_pattern}.{image_format}")
     (
         ffmpeg.input(input_pattern, framerate=fps)
         .output(
@@ -32,7 +36,13 @@ def _ffmpeg_assert_quality(quality: int) -> None:
     ), "Quality must be between 2 and 31 (inclusive), lower is better."
 
 
-def convert_mp4_to_jpg(video_path: str, output_folder: str, quality: int = 2) -> None:
+def convert_mp4_to_jpg(
+    video_path: str | Path,
+    output_folder: str | Path,
+    quality: int = 2,
+    image_format: str = "jpg",
+    file_names_pattern: str = "%05d",
+) -> None:
     """Convert an MP4 video to a folder of JPG images.
 
     Example
@@ -44,13 +54,18 @@ def convert_mp4_to_jpg(video_path: str, output_folder: str, quality: int = 2) ->
     import ffmpeg
 
     os.makedirs(output_folder, exist_ok=True)
-    output_pattern = os.path.join(output_folder, "%05d.jpg")
+    output_pattern = os.path.join(output_folder, f"{file_names_pattern}.{image_format}")
     _ffmpeg_assert_quality(quality)
-    ffmpeg.input(video_path).output(output_pattern, **{"q:v": quality}).run()
+    ffmpeg.input(str(video_path)).output(output_pattern, **{"q:v": quality}).run()
 
 
 def convert_mp4_to_jpg_every_nth_frame(
-    video_path: str, output_folder: str, n: int = 30, quality: int = 2
+    video_path: str | Path,
+    output_folder: str | Path,
+    n: int = 30,
+    quality: int = 2,
+    image_format: str = "jpg",
+    file_names_pattern: str = "%05d",
 ) -> None:
     """Convert an MP4 video to a folder of JPG images by selecting every `n`-th frame.
 
@@ -63,9 +78,9 @@ def convert_mp4_to_jpg_every_nth_frame(
     import ffmpeg
 
     os.makedirs(output_folder, exist_ok=True)
-    output_pattern = os.path.join(output_folder, "%05d.jpg")
+    output_pattern = os.path.join(output_folder, f"{file_names_pattern}.{image_format}")
     _ffmpeg_assert_quality(quality)
-    ffmpeg.input(video_path).output(
+    ffmpeg.input(str(video_path)).output(
         output_pattern,
         vf=f"select=not(mod(n\\,{n}))",  # Select every `n`-th frame
         vsync="vfr",  # Variable frame rate
@@ -74,7 +89,7 @@ def convert_mp4_to_jpg_every_nth_frame(
     ).run()
 
 
-def merge_videos(video_paths: list[Path], output_path: str) -> None:
+def merge_videos(video_paths: list[Path], output_path: str | Path) -> None:
     """Merge multiple videos into a single video.
 
     Example
@@ -102,7 +117,7 @@ def merge_videos(video_paths: list[Path], output_path: str) -> None:
 
     # Define the codec and create a VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+    out = cv2.VideoWriter(str(output_path), fourcc, fps, (frame_width, frame_height))
 
     for capture in tqdm(video_captures, desc="Merging videos"):
         while capture.isOpened():

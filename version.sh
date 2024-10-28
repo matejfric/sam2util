@@ -12,7 +12,7 @@ poetry version "$1"
 git add pyproject.toml
 
 # Use the provided commit message or default to "v<version>"
-commit_message=${2:-"v$(poetry version -s)"}
+commit_message="v$(poetry version -s) ${2:-""}"
 
 # Commit with the custom or default commit message
 git commit -m "$commit_message"
