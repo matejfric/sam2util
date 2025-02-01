@@ -1,39 +1,74 @@
 import os
 from pathlib import Path
+from typing import Literal
+import ffmpeg
 
 
-def convert_jpg_to_mp4(
+def convert_images_to_mp4(
     image_folder: str | Path,
     output_video_path: str | Path,
     fps: int = 30,
     image_format: str = "jpg",
-    file_names_pattern: str = "%05d",
+    codec: str = "libx264",
+    crf: int = 0,
+    preset: Literal[
+        "ultrafast",
+        "superfast",
+        "veryfast",
+        "faster",
+        "fast",
+        "medium",
+        "slow",
+        "slower",
+        "veryslow",
+    ] = "medium",
 ) -> None:
     """Convert a folder of images to an MP4 video.
 
-    Example
-    -------
-    >>> video_path = 'video.mp4'
-    >>> output_folder = 'video_jpg'
-    >>> convert_mp4_to_jpg(video_path, output_folder)
-    """
-    import ffmpeg
+    Assumes that the images are sorted lexically by filename.
 
-    input_pattern = os.path.join(image_folder, f"{file_names_pattern}.{image_format}")
+    Parameters
+    ----------
+    crf : int
+        Constant Rate Factor (CRF) for video quality. The range is 0-51, where 0 is lossless, 23 is the default, and 51 is the worst quality.
+    preset : str
+        The preset for the x264 encoder. A slower preset will provide better compression efficiency.
+    """
+
+    image_folder = Path(image_folder)
+    output_video_path = Path(output_video_path)
+
+    # Create a temporary text file listing the image files
+    temp_file_list = image_folder / "input_images.txt"
+    with open(temp_file_list, "w") as f:
+        for image_file in sorted(
+            image_folder.glob(f"*.{image_format}"), key=lambda p: p.stem
+        ):
+            f.write(f"file '{image_file}'\n")
+
     (
-        ffmpeg.input(input_pattern, framerate=fps)
+        ffmpeg.input(temp_file_list, format="concat", safe=0, r=fps)
         .output(
-            str(output_video_path), vcodec="mpeg4", pix_fmt="yuv420p", loglevel="error"
+            str(output_video_path),
+            vcodec=codec,
+            pix_fmt="yuv420p",
+            crf=crf,
+            preset=preset,
+            r=fps,
+            loglevel="error",
         )
         .run(overwrite_output=True)
     )
 
+    # Clean up temporary file
+    temp_file_list.unlink()
+
 
 def _ffmpeg_assert_quality(quality: int) -> None:
     """Assert that the quality is between 2 and 31 (inclusive)."""
-    assert (
-        2 <= quality <= 31
-    ), "Quality must be between 2 and 31 (inclusive), lower is better."
+    assert 2 <= quality <= 31, (
+        "Quality must be between 2 and 31 (inclusive), lower is better."
+    )
 
 
 def convert_mp4_to_jpg(
@@ -51,8 +86,6 @@ def convert_mp4_to_jpg(
     >>> output_folder = 'video_jpg'
     >>> convert_mp4_to_jpg(video_path, output_folder)
     """
-    import ffmpeg
-
     os.makedirs(output_folder, exist_ok=True)
     output_pattern = os.path.join(output_folder, f"{file_names_pattern}.{image_format}")
     _ffmpeg_assert_quality(quality)
@@ -75,8 +108,6 @@ def convert_mp4_to_jpg_every_nth_frame(
     >>> output_folder = 'video_jpg'
     >>> convert_mp4_to_jpg_every_nth_frame(video_path, output_folder)
     """
-    import ffmpeg
-
     os.makedirs(output_folder, exist_ok=True)
     output_pattern = os.path.join(output_folder, f"{file_names_pattern}.{image_format}")
     _ffmpeg_assert_quality(quality)
