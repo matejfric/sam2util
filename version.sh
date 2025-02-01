@@ -6,8 +6,16 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
+if ! poetry --version; then
+  echo "Error: Poetry is not installed. Are you in the right virtual environment?"
+  exit 1
+fi
+
 # Set the version using poetry
-poetry version "$1"
+if ! poetry version "$1"; then
+  echo "Error: Failed to set version using poetry."
+  exit 1
+fi
 
 git add pyproject.toml
 
