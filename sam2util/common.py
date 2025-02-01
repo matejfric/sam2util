@@ -71,7 +71,7 @@ def _ffmpeg_assert_quality(quality: int) -> None:
     )
 
 
-def convert_mp4_to_jpg(
+def convert_mp4_to_images(
     video_path: str | Path,
     output_folder: str | Path,
     quality: int = 2,
@@ -92,7 +92,7 @@ def convert_mp4_to_jpg(
     ffmpeg.input(str(video_path)).output(output_pattern, **{"q:v": quality}).run()
 
 
-def convert_mp4_to_jpg_every_nth_frame(
+def convert_mp4_to_images_every_nth_frame(
     video_path: str | Path,
     output_folder: str | Path,
     n: int = 30,
