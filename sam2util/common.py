@@ -44,7 +44,7 @@ def convert_images_to_mp4(
         for image_file in sorted(
             image_folder.glob(f"*.{image_format}"), key=lambda p: p.stem
         ):
-            f.write(f"file '{image_file}'\n")
+            f.write(f"file '{image_file.name}'\n")
 
     (
         ffmpeg.input(temp_file_list, format="concat", safe=0, r=fps)
